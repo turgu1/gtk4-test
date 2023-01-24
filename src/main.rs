@@ -36,9 +36,10 @@ impl<E: Eq + Hash + Clone + Copy> Publisher<E> {
     }
 
     pub fn notify(&self, event: E) {
-        let listeners = self.events.get(&event).unwrap();
-        for listener in listeners {
+        if let Some(listeners) = self.events.get(&event) {
+          for listener in listeners {
             listener(event);
+          }
         }
     }
 }
