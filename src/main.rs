@@ -62,45 +62,55 @@ pub struct Gtk4LowUi {
   publisher: Rc<RefCell<Publisher<Event>>>,
 }
 
-impl Gtk4LowUi  {
-  fn new() -> Gtk4LowUi {
-    const APP_ID: &str = "com.turgu.test";
+const APP_ID: &str = "com.turgu.test";
+const    GAP:  i32 = 24;
 
-    // let ui = Self {
-    let ui = Self {
-      app: Application::builder()
-        .application_id(APP_ID)
-        .build(),
-      publisher: Rc::new(RefCell::new(Publisher::<Event>::new())),
-    };
+fn build_gtk_app(publisher: Rc<RefCell<Publisher<Event>>>) -> Application {
+  let gtk_app = Application::builder()
+    .application_id(APP_ID)
+    .build();
 
-    const GAP: i32 = 24;
-
-    ui.app.connect_activate(|app| {
-      let button = Button::builder()
-        .label("This is a GTK4 Test")
-        .margin_top(GAP)
-        .margin_bottom(GAP)
-        .margin_start(GAP)
-        .margin_end(GAP)
-        .build();
-
-      let window = ApplicationWindow::builder()
-        .title("GTK Trials")
-        .application(app)
-        .child(&button)
-        .build();
-
-      
-      let publisher = Rc::clone(&ui.publisher);
-      button.connect_clicked({
-        move |_| { 
-          println!("Input handler called..."); 
-          publisher.borrow().notify(Event::Test); }});
-      window.show();
+    gtk_app.connect_activate(move |app| {
+      build_ui(app, publisher.clone());
     });
 
-    ui
+    gtk_app
+}
+
+fn build_ui(app: &Application, publisher: Rc<RefCell<Publisher<Event>>>) {
+  let button = Button::builder()
+    .label("This is a GTK4 Test")
+    .margin_top(GAP)
+    .margin_bottom(GAP)
+    .margin_start(GAP)
+    .margin_end(GAP)
+    .build();
+
+  let window = ApplicationWindow::builder()
+    .title("GTK Trials")
+    .application(app)
+    .child(&button)
+    .build();
+    
+  let p = publisher;
+  button.connect_clicked(
+    move |_| { 
+      println!("Input handler called..."); 
+      p.borrow().notify(Event::Test);
+    }
+  );
+
+  window.show();
+}
+
+impl Gtk4LowUi  {
+  fn new() -> Gtk4LowUi {
+    let p = Rc::new(RefCell::new(Publisher::<Event>::new()));
+
+    Self {
+      app: build_gtk_app(p.clone()),
+      publisher: p,
+    }
   }
 
   fn run(&self) {
@@ -110,7 +120,6 @@ impl Gtk4LowUi  {
   fn subscribe(&mut self, listener: Subscriber<Event>, event_type: Event) {
     self.publisher.borrow_mut().subscribe(event_type, listener);
   }
-
 }
 
 // ----- Main Application -----
